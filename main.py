@@ -1,22 +1,24 @@
-# Pygame template - skeleton for a new pygame project
 import pygame
 import random
 from os import path
+import math
+import time
 
 img_dir = path.join(path.dirname(__file__), "img")
+font_name = pygame.font.match_font('arial')
 
 WIDTH = 1200
 HEIGHT = 600
-FPS = 30
+FPS = 60
 
-# define colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 
-# initialize pygame and create window
+score = 0
+
 pygame.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -84,7 +86,8 @@ class Laser(pygame.sprite.Sprite):
 class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(enemy_img, (100, 50))
+        self.image = random.choice(enemy_images)
+        self.image = pygame.transform.scale(self.image, (100, 50))
         self.image = pygame.transform.flip(self.image, True, False)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
@@ -107,89 +110,93 @@ class Enemy(pygame.sprite.Sprite):
         if self.rect.bottom > HEIGHT - 10:
             self.speedy = -1 * self.speedy
 
-class Enemy2(pygame.sprite.Sprite):
-    def __init__(self):
+
+class Boss(pygame.sprite.Sprite):
+    def __init__(self, trackingPlayer: Player):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(enemy2_img, (100, 80))
-        self.image = pygame.transform.flip(self.image, True, False)
-        self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        self.radius = 40
-        self.rect.x = random.randrange(WIDTH / 1.5, WIDTH - 100)
-        self.rect.y = random.randrange(10, HEIGHT- 50)
-        self.speedx = random.randrange(-5, 5)
-        self.speedy = random.randrange(-5, 5)
-
-    def update(self):
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
-
-        if self.rect.right > WIDTH - 30:
-            self.speedx = -1 * self.speedx
-        if self.rect.left < WIDTH / 1.5:
-            self.speedx = -1 * self.speedx
-        if self.rect.top < 10:
-            self.speedy = -1 * self.speedy
-        if self.rect.bottom > HEIGHT - 10:
-            self.speedy = -1 * self.speedy
-
-class Enemy3(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(enemy3_img, (100, 50))
+        self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, 'enemy2.png')), (300, 150))
         self.image = pygame.transform.flip(self.image, True, False)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * 0.85 / 2)
-        self.rect.x = random.randrange(WIDTH / 1.5, WIDTH - 100)
-        self.rect.y = random.randrange(10, HEIGHT - 50)
+        self.rect.x = random.randrange(WIDTH / 1.5, WIDTH - 150)
+        self.rect.y = random.randrange(150, HEIGHT - 150)
         self.speedx = random.randrange(-10, 10)
-        self.speedy = random.randrange(-10, 10)
+        self.speedy = random.randrange(5, 15)
+        self.trackingPlayer = trackingPlayer
+        self.isAlive = False
+        self.health = 100
 
     def update(self):
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
+        self.trackPlayer(self.trackingPlayer)
+        
+        if self.health <= 0:
+            self.isAlive = False
+            self.kill()            
+            drawText(screen, "YOU WON!!!!", 30, WIDTH / 2, HEIGHT / 2)
+            drawText(screen, "Your score: " + str(score), 20, WIDTH / 2, HEIGHT / 2 + 30)
+            pygame.display.flip()
+            time.sleep(5)
 
-        if self.rect.right > WIDTH - 30:
-            self.speedx = -1 * self.speedx
-        if self.rect.left < WIDTH / 1.5:
-            self.speedx = -1 * self.speedx
-        if self.rect.top < 10:
-            self.speedy = -1 * self.speedy
-        if self.rect.bottom > HEIGHT - 10:
-            self.speedy = -1 * self.speedy
+        
+    def trackPlayer(self, player):
+        dx, dy = player.rect.x - self.rect.x, player.rect.y - self.rect.y
+        distance = math.hypot(dx + 1, dy + 1)
+        dx, dy = dx / distance, dy / distance
+        self.rect.y += dy * self.speedy
+        
 
-# Load all game graphics
+def drawText(surf, text, size, x, y):
+    font = pygame.font.Font(font_name, size)
+    text_surface = font.render(text, True, WHITE) # True = Anti-aliasing for font
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surf.blit(text_surface, text_rect)
+
+def spawnEnemy():
+    enemy = Enemy()
+    all_sprites.add(enemy)
+    enemies.add(enemy)
+
+
+def spawnBoss():
+    boss.isAlive = True
+    all_sprites.add(boss)
+    bosses.add(boss)
+    
+
+# Load images
 background = pygame.image.load(path.join(img_dir, "background.png")).convert()
 background_rect = background.get_rect()
 player_img = pygame.image.load(path.join(img_dir, "player.png")).convert()
 laser_img = pygame.image.load(path.join(img_dir, "laser.png")).convert()
-enemy_img = pygame.image.load(path.join(img_dir, "enemy.png")).convert()
-enemy2_img = pygame.image.load(path.join(img_dir, "enemy2.png")).convert()
-enemy3_img = pygame.image.load(path.join(img_dir, "enemy3.png")).convert()
+
+enemy_images = []
+enemy_list = ['enemy.png', 'enemy2.png', 'enemy3.png']
+
+for img in enemy_list:
+    enemy_images.append(pygame.image.load(path.join(img_dir, img)).convert())
 
 all_sprites = pygame.sprite.Group()
 lasers = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
+bosses = pygame.sprite.Group()
 
 player = Player()
 all_sprites.add(player)
 
-enemy_types = [Enemy(), Enemy2(), Enemy3()]
+boss = Boss(player)
 
 for i in range(10):
-    enemy = random.choices(enemy_types)
-    all_sprites.add(enemy)
-    enemies.add(enemy)
+    spawnEnemy()
+    
 
 # Game loop
 running = True
 while running:
-    # keep loop running at the right speed
     clock.tick(FPS)
-    # Process input (events)
+    # Process input
     for event in pygame.event.get():
-        # check for closing window
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
@@ -199,17 +206,30 @@ while running:
     # Update
     all_sprites.update()
 
-    hits = pygame.sprite.groupcollide(enemies, lasers, True, True)
-    for hit in hits:
-        enemy = random.choices(enemy_types)
-        all_sprites.add(enemy)
-        enemies.add(enemy)
+    hitsEnemy = pygame.sprite.groupcollide(enemies, lasers, True, True)
+    hitsBoss = pygame.sprite.groupcollide(bosses, lasers, False, True)
 
-    # Draw / render
+    if score < 100:
+        for hit in hitsEnemy:
+            score += 10
+            spawnEnemy()
+    if score >= 100:
+        for enemy in enemies:
+            enemy.kill()
+            if not bosses:
+                spawnBoss()
+        for hits in hitsBoss:
+            boss.health -= 10
+
+        
+
+    # Draw / Render
     screen.fill(BLACK)
     screen.blit(background, background_rect)
     all_sprites.draw(screen)
-    # *after* drawing everything, flip the display
+    drawText(screen, "Score: " + str(score), 18, WIDTH / 2, 15)
     pygame.display.flip()
+
+
 
 pygame.quit()
