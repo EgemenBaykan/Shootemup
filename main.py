@@ -268,12 +268,10 @@ while running:
 
     for hits in hitsPlayer:
         player.health -= 10
-        if player.health <= 0:
-            player.isAlive = False
-            
+    
     if player.health <= 0:
         player.isAlive = False
-
+        
     if not player.isAlive:
         drawText(screen, "YOU ARE DEAD LOSER!", 18, WIDTH / 2, HEIGHT / 2)
         drawText(screen, "Your score: " + str(score), 13, WIDTH / 2, (HEIGHT / 2) + 10)
@@ -302,6 +300,7 @@ while running:
         drawText(screen, "YOU ARE DEAD LOSER!!!", 18, WIDTH / 2, HEIGHT / 2)
         drawText(screen, "Your score: " + str(score), 13, WIDTH / 2, (HEIGHT / 2) + 30)
         time.sleep(2)
+
     pygame.display.flip()
 
 pygame.quit()
